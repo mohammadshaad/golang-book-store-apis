@@ -16,12 +16,8 @@ import (
 
 	"github.com/go-playground/validator/v10"
 
-	"github.com/gofiber/jwt/v2"
-	"github.com/gofiber/fiber/v2/middleware/cors"
-	 
-	"github.com/dgrijalva/jwt-go"
-	"github.com/golang-jwt/jwt"
-
+	jwtware "github.com/gofiber/jwt/v3"
+	"github.com/golang-jwt/jwt/v4"
 )
 
 // UserRole represents the role of a user
@@ -93,170 +89,81 @@ func main() {
 	// Create a Fiber app
 	app := fiber.New()
 
-	// Define a route for creating an admin user
-	app.Post("/admin/register", createAdminUserHandler)
-
-	// Define a route for making a user an admin
-	app.Put("/admin/make-admin/:id", makeAdminHandler)
-
 	// Define a route for user registration
 	app.Post("/register", registerHandler)
 
 	// Define a route for user login
 	app.Post("/login", loginHandler)
 
-	// Define a route for deactivating an account
-	app.Put("/deactivate/:id", deactivateAccountHandler)
+	// Define a middleware to protect routes that require a valid JWT
+	user := app.Group("/user")
+	user.Use(jwtware.New(jwtware.Config{
+		SigningKey: []byte("secret"),
+	}))
 
-	// Define a route for activating an account
-	app.Put("/activate/:id", activateAccountHandler)
-
-	// Define a route for deleting an account
-	app.Delete("/delete/:id", deleteAccountHandler)
+	// Define a route for the user section
+	user.Get("/", func(c *fiber.Ctx) error {
+		return c.SendString("Welcome user!")
+	})
 
 	// Define a route for getting a user's profile
-	app.Get("/:id", profile)
+	user.Get("/profile/:id", profile)
 
 	// Define a route for updating a user's profile
-	app.Put("/:id", updateProfile)
+	user.Put("/profile/:id", updateProfile)
 
-	// Create a new book
-	app.Post("/books", createBookHandler)
+	// Define a route for deactivating an account
+	user.Put("/deactivate/:id", deactivateAccountHandler)
+
+	// Define a route for activating an account
+	user.Put("/activate/:id", activateAccountHandler)
+
+	// Define a route for deleting an account
+	user.Delete("/delete/:id", deleteAccountHandler)
 
 	// Get a list of all books
-	app.Get("/", getAllBooksHandler)
+	user.Get("/books", getAllBooksHandler)
 
 	// Get a single book by ID
-	app.Get("/books/:id", getBookByIDHandler)
+	user.Get("/book/:id", getBookByIDHandler)
 
-	// Update a book by ID
-	app.Put("/books/:id", updateBookHandler)
+	// Define a middleware to protect routes that require a valid JWT
+	admin := app.Group("/admin")
+	admin.Use(jwtware.New(jwtware.Config{
+		SigningKey: []byte("secret"),
+	}))
 
-	// Delete a book by ID
-	app.Delete("/books/:id", deleteBookHandler)
+	// Define a route for the admin section
+	admin.Get("/", func(c *fiber.Ctx) error {
+		return c.SendString("Welcome admin!")
+	})
+
+	// Admin - Get a list of all books
+	admin.Get("/books", getAllBooksHandler)
+
+	// Admin - Get a single book by ID
+	admin.Get("/book/:id", getBookByIDHandler)
+
+	// Admin - Create a new book
+	admin.Post("/book", createBookHandler)
+
+	// Admin - Update a book by ID
+	admin.Put("/book/:id", updateBookHandler)
+
+	// Admin - Delete a book by ID
+	admin.Delete("/book/:id", deleteBookHandler)
+
+	// Admin - Get all users
+	admin.Get("/users", getAllUsersHandler)
+
+	// Admin - Get a single user by ID
+	admin.Get("/user/:id", getUserByIDHandler)
 
 	// Start the Fiber app
 	port := 8080 // You can change this to your desired port
 	fmt.Printf("Server is listening on port %d...\n", port)
 	app.Listen(fmt.Sprintf(":%d", port))
 }
-
-// Create an admin user
-func createAdminUserHandler(c *fiber.Ctx) error {
-
-	// Parse the user data from the request body
-	var userData User
-	if err := c.BodyParser(&userData); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid input data",
-		})
-	}
-
-	// Check if the user is an admin before creating an admin user
-	userRole := "admin" // Set the role to "admin" for admin user creation
-	if userRole != "admin" {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-			"error": "Forbidden: Only admin users can create admin users",
-		})
-	}
-
-	// Validate user input
-	if err := validate.Struct(userData); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error":  "Invalid input data",
-			"errors": err.(validator.ValidationErrors),
-		})
-	}
-
-	// Check if the user already exists (email must be unique)
-	var user User
-	if err := db.Where("email = ?", userData.Email).First(&user).Error; err == nil {
-		// User already exists, don't register again
-		return c.Status(fiber.StatusConflict).JSON(fiber.Map{
-			"error": "User already exists",
-		})
-	}
-
-	// Generate a random numeric user ID
-	rand.Seed(time.Now().UnixNano())
-	userID := uint(rand.Intn(10000)) // Change the range as needed
-
-	// Hash password
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(userData.Password), 10)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Cannot hash password",
-		})
-	}
-
-	// Create a new user with the generated ID
-	newUser := User{
-		UserID:    userID,
-		FirstName: userData.FirstName,
-		LastName:  userData.LastName,
-		Email:     userData.Email,
-		Password:  hashedPassword,
-		Role:      "admin",
-	}
-
-	if err := db.Create(&newUser).Error; err != nil {
-		return c.Status(fiber.StatusConflict).JSON(fiber.Map{
-			"error": "User registration failed",
-		})
-	}
-
-	// Return a success message
-
-	return c.JSON(fiber.Map{
-		"success": true,
-		"message": "Admin user created successfully",
-	})
-}
-
-// Make a user an admin
-func makeAdminHandler(c *fiber.Ctx) error {
-	// Parse the user ID from the URL params
-	idStr := c.Params("id")
-	id, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid ID format",
-		})
-	}
-
-	// Check if the user is an admin before making another user an admin
-	userRole := "admin" // Set the role to "admin" for making another user an admin
-	if userRole != "admin" {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-			"error": "Forbidden: Only admin users can make other users admins",
-		})
-	}
-
-	// Find the user in the database
-	var user User
-	if err := db.First(&user, uint(id)).Error; err != nil {
-		// Handle database errors (e.g., no user with the given ID)
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"error": "User not found",
-		})
-	}
-
-	// Make the user an admin
-	if err := db.Model(&user).Update("role", "admin").Error; err != nil {
-		// Handle database errors
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Cannot make user an admin",
-		})
-	}
-
-	// Return a success message
-
-	return c.JSON(fiber.Map{
-		"success": true,
-		"message": "User is now an admin",
-	})
-}
-
 
 func loginHandler(c *fiber.Ctx) error {
 	var userData struct {
@@ -297,10 +204,19 @@ func loginHandler(c *fiber.Ctx) error {
 		})
 	}
 
-	// Return a success message
+	// Create a JWT token
+	token, err := createToken(user.UserID)
+	if err != nil {
+		// Handle token creation error
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Cannot log in",
+		})
+	}
+
+	// Return the token
 	return c.JSON(fiber.Map{
 		"success": true,
-		"message": "Logged in successfully",
+		"token":   token,
 	})
 
 }
@@ -367,10 +283,19 @@ func registerHandler(c *fiber.Ctx) error {
 		})
 	}
 
-	// Return a success message
+	// Create a JWT token
+	token, err := createToken(newUser.UserID)
+	if err != nil {
+		// Handle token creation error
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Cannot log in",
+		})
+	}
+
+	// Return the token
 	return c.JSON(fiber.Map{
 		"success": true,
-		"message": "User created successfully",
+		"token":   token,
 	})
 
 }
@@ -692,4 +617,41 @@ func deleteBookHandler(c *fiber.Ctx) error {
 		"success": true,
 		"message": "Book deleted successfully",
 	})
+}
+
+// Get all users
+func getAllUsersHandler(c *fiber.Ctx) error {
+	var users []User
+	if err := db.Find(&users).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to fetch users",
+		})
+	}
+	return c.JSON(users)
+}
+
+// Get a single user by ID
+func getUserByIDHandler(c *fiber.Ctx) error {
+	id := c.Params("id")
+	var user User
+	if err := db.First(&user, id).Error; err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "User not found",
+		})
+	}
+	return c.JSON(user)
+}
+
+// Create JWT token
+func createToken(userID uint) (string, error) {
+	// Define the payload
+	payload := jwt.MapClaims{}
+	payload["user_id"] = userID
+	payload["exp"] = time.Now().Add(time.Hour * 24).Unix() // 24 hours
+
+	// Create the token
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, payload)
+
+	// Generate the encoded token
+	return token.SignedString([]byte("secret"))
 }
