@@ -1,0 +1,33 @@
+# Compiled Object files, Static and Dynamic libs (Shared Objects)
+*.o
+*.a
+*.so
+
+# Folders
+_obj/
+_test/
+vendor/
+.idea/
+.vscode/
+
+# Output files
+*.exe
+*.test
+*.prof
+*.out
+
+# Dependency directories (remove the ones you need)
+/bin/
+/pkg/
+/github.com/
+/golang.org/
+/gopkg.in/
+
+# Compiled Go binary
+main
+
+# Environment variables file
+.env
+
+# macOS
+.DS_Store
