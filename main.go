@@ -16,8 +16,12 @@ import (
 
 	"github.com/go-playground/validator/v10"
 
-	jwtware "github.com/gofiber/jwt/v2"
+	"github.com/gofiber/jwt/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
+	 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/golang-jwt/jwt"
+
 )
 
 // UserRole represents the role of a user
@@ -51,27 +55,6 @@ type Book struct {
 
 var db *gorm.DB
 var validate *validator.Validate
-var jwtSecret = []byte("secret")
-
-// Function to generate a JWT token
-func generateJWTToken(user *User) (string, error) {
-	// Create a new token
-	token := jwt.New(jwt.SigningMethodHS256)
-
-	// Set claims
-	claims := token.Claims.(jwt.MapClaims)
-	claims["id"] = user.UserID
-	claims["email"] = user.Email
-	claims["role"] = user.Role
-
-	// Sign the token with your JWT secret
-	tokenString, err := token.SignedString(jwtSecret)
-	if err != nil {
-		return "", err
-	}
-
-	return tokenString, nil
-}
 
 func main() {
 	fmt.Println("Welcome to the book store")
@@ -97,8 +80,6 @@ func main() {
 		dbHost, dbPort, dbUser, dbPassword, dbName,
 	)
 
-	// connStr := "user=postgres password=oppo-098 dbname=book-store port=5432 sslmode=disable TimeZone=Asia/Shanghai"
-
 	// Open the database connection
 	var err error
 	db, err = gorm.Open(postgres.Open(connStr), &gorm.Config{})
@@ -112,19 +93,11 @@ func main() {
 	// Create a Fiber app
 	app := fiber.New()
 
-	// Define JWT middleware
-	jwtMiddleware := jwtware.New(jwtware.Config{
-		SigningKey: jwtSecret,
-	})
-
 	// Define a route for creating an admin user
 	app.Post("/admin/register", createAdminUserHandler)
 
 	// Define a route for making a user an admin
 	app.Put("/admin/make-admin/:id", makeAdminHandler)
-
-	// Apply JWT middleware to routes that require authentication
-	app.Use(jwtMiddleware)
 
 	// Define a route for user registration
 	app.Post("/register", registerHandler)
@@ -180,7 +153,7 @@ func createAdminUserHandler(c *fiber.Ctx) error {
 	}
 
 	// Check if the user is an admin before creating an admin user
-	userRole := c.Locals("user").(*jwt.Token).Claims.(jwt.MapClaims)["role"].(string)
+	userRole := "admin" // Set the role to "admin" for admin user creation
 	if userRole != "admin" {
 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
 			"error": "Forbidden: Only admin users can create admin users",
@@ -252,7 +225,7 @@ func makeAdminHandler(c *fiber.Ctx) error {
 	}
 
 	// Check if the user is an admin before making another user an admin
-	userRole := c.Locals("user").(*jwt.Token).Claims.(jwt.MapClaims)["role"].(string)
+	userRole := "admin" // Set the role to "admin" for making another user an admin
 	if userRole != "admin" {
 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
 			"error": "Forbidden: Only admin users can make other users admins",
@@ -283,6 +256,7 @@ func makeAdminHandler(c *fiber.Ctx) error {
 		"message": "User is now an admin",
 	})
 }
+
 
 func loginHandler(c *fiber.Ctx) error {
 	var userData struct {
@@ -323,19 +297,10 @@ func loginHandler(c *fiber.Ctx) error {
 		})
 	}
 
-	// Generate a JWT token for the logged-in user
-	token, err := generateJWTToken(&user)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Token generation failed",
-		})
-	}
-
-	// Return the JWT token along with the success message
+	// Return a success message
 	return c.JSON(fiber.Map{
 		"success": true,
 		"message": "Logged in successfully",
-		"token":   token,
 	})
 
 }
@@ -402,19 +367,10 @@ func registerHandler(c *fiber.Ctx) error {
 		})
 	}
 
-	// Generate a JWT token for the new user
-	token, err := generateJWTToken(&newUser)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Token generation failed",
-		})
-	}
-
-	// Return the JWT token along with the success message
+	// Return a success message
 	return c.JSON(fiber.Map{
 		"success": true,
 		"message": "User created successfully",
-		"token":   token,
 	})
 
 }
@@ -685,42 +641,53 @@ func updateBookHandler(c *fiber.Ctx) error {
 			"error": "Invalid input data",
 		})
 	}
-	var existingBook Book
-	if err := db.First(&existingBook, id).Error; err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"error": "Book not found",
-		})
-	}
-	// Update the book's fields
-	existingBook.Title = updatedBook.Title
-	existingBook.Author = updatedBook.Author
-	existingBook.Description = updatedBook.Description
-	existingBook.Price = updatedBook.Price
-	existingBook.Quantity = updatedBook.Quantity
-	// Save the updated book to the database
-	if err := db.Save(&existingBook).Error; err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to update book",
-		})
-	}
-	return c.JSON(existingBook)
-}
 
-// Delete a book by ID
-func deleteBookHandler(c *fiber.Ctx) error {
-	id := c.Params("id")
+	// Find the book in the database
 	var book Book
 	if err := db.First(&book, id).Error; err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"error": "Book not found",
 		})
 	}
+
+	// Update the book's information
+	book.Title = updatedBook.Title
+	book.Author = updatedBook.Author
+	book.ISBN = updatedBook.ISBN
+	book.Genre = updatedBook.Genre
+	book.Price = updatedBook.Price
+	book.Quantity = updatedBook.Quantity
+	book.Description = updatedBook.Description
+
+	// Save the updated book to the database
+	if err := db.Save(&book).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to update book",
+		})
+	}
+
+	return c.JSON(book)
+}
+
+// Delete a book by ID
+func deleteBookHandler(c *fiber.Ctx) error {
+	id := c.Params("id")
+
+	// Find the book in the database
+	var book Book
+	if err := db.First(&book, id).Error; err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "Book not found",
+		})
+	}
+
 	// Delete the book from the database
 	if err := db.Delete(&book).Error; err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to delete book",
 		})
 	}
+
 	return c.JSON(fiber.Map{
 		"success": true,
 		"message": "Book deleted successfully",
