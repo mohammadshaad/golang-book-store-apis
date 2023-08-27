@@ -104,7 +104,7 @@ func main() {
 	// Define a middleware to protect routes that require a valid JWT
 	user := app.Group("/user")
 	user.Use(jwtware.New(jwtware.Config{
-		SigningKey: []byte("secret"),
+		SigningKey: []byte(os.Getenv("JWT_SECRET")),
 	}))
 
 	// Define a route for the user section
@@ -139,7 +139,7 @@ func main() {
 	// Define a middleware to protect routes that require a valid JWT
 	admin := app.Group("/admin")
 	admin.Use(jwtware.New(jwtware.Config{
-		SigningKey: []byte("secret"),
+		SigningKey: []byte(os.Getenv("JWT_SECRET")),
 	}))
 
 	// Add a custom middleware to check for the "admin" role
@@ -722,5 +722,5 @@ func createToken(userID uint) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, payload)
 
 	// Generate the encoded token
-	return token.SignedString([]byte("secret"))
+	return token.SignedString([]byte(os.Getenv("JWT_SECRET")))
 }
