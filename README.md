@@ -16,6 +16,163 @@ The Bookstore Application is a web-based platform that allows users to browse, p
 - JSON Web Tokens (JWT) for authentication
 - React.js (Frontend)
 
+### APIs Used
+
+1. **User Registration:**
+   ```shell
+   Endpoint: /register
+   Method: POST
+   Description: Allows a user to register by providing their first name, last name, email, password, and role.
+   ```
+
+2. **User Login:**
+   ```shell
+   Endpoint: /login
+   Method: POST
+   Description: Allows a user to log in by providing their email and password.
+   ```
+
+3. **User Profile:**
+   ```shell
+   Endpoint: /user/profile/:id
+   Method: GET
+   Description: Retrieves a user's profile by their ID.
+   ```
+
+4. **Update User Profile:**
+   ```shell
+   Endpoint: /user/profile/:id
+   Method: PUT
+   Description: Allows a user to update their profile information, including first name, last name, email, and password.
+   ```
+
+5. **Deactivate User Account:**
+   ```shell
+   Endpoint: /user/deactivate/:id
+   Method: PUT
+   Description: Deactivates a user's account.
+   ```
+
+6. **Activate User Account:**
+   ```shell
+   Endpoint: /user/activate/:id
+   Method: PUT
+   Description: Activates a user's account.
+   ```
+
+7. **Delete User Account:**
+   ```shell
+   Endpoint: /user/delete/:id
+   Method: DELETE
+   Description: Deletes a user's account.
+   ```
+
+8. **User Logout:**
+   ```shell
+   Endpoint: /user/logout
+   Method: POST
+   Description: Logs out the currently authenticated user.
+   ```
+
+9. **Get All Books:**
+   ```shell
+   Endpoint: /user/books
+   Method: GET
+   Description: Retrieves a list of all books available.
+   ```
+
+10. **Get Book by ID:**
+    ```shell
+    Endpoint: /user/book/:id
+    Method: GET
+    Description: Retrieves information about a specific book by its ID.
+    ```
+
+11. **Add to Cart:**
+    ```shell
+    Endpoint: /user/cart
+    Method: POST
+    Description: Adds a book to the user's shopping cart.
+    ```
+
+12. **Get User's Cart:**
+    ```shell
+    Endpoint: /user/cart
+    Method: GET
+    Description: Retrieves the user's shopping cart.
+    ```
+
+13. **Remove from Cart:**
+    ```shell
+    Endpoint: /user/cart/:book_id
+    Method: DELETE
+    Description: Removes a book from the user's shopping cart.
+    ```
+
+14. **Update Cart Item Quantity:**
+    ```shell
+    Endpoint: /user/cart/:book_id
+    Method: PUT
+    Description: Updates the quantity of a book in the user's shopping cart.
+    ```
+
+15. **Admin Section (admin access):**
+    ```shell
+    Endpoint: /admin
+    Method: GET
+    Description: Access the admin section.
+    ```
+
+16. **Admin - Get All Books (admin access):**
+    ```shell
+    Endpoint: /admin/books
+    Method: GET
+    Description: Retrieves a list of all books available (admin access).
+    ```
+
+17. **Admin - Get Book by ID (admin access):**
+    ```shell
+    Endpoint: /admin/book/:id
+    Method: GET
+    Description: Retrieves information about a specific book by its ID (admin access).
+    ```
+
+18. **Admin - Create Book (admin access):**
+    ```shell
+    Endpoint: /admin/book
+    Method: POST
+    Description: Allows an admin to create a new book (admin access).
+    ```
+
+19. **Admin - Update Book by ID (admin access):**
+    ```shell
+    Endpoint: /admin/book/:id
+    Method: PUT
+    Description: Allows an admin to update information about a specific book by its ID (admin access).
+    ```
+
+20. **Admin - Delete Book by ID (admin access):**
+    ```shell
+    Endpoint: /admin/book/:id
+    Method: DELETE
+    Description: Allows an admin to delete a book by its ID (admin access).
+    ```
+
+21. **Admin - Get All Users (admin access):**
+    ```shell
+    Endpoint: /admin/users
+    Method: GET
+    Description: Retrieves a list of all users (admin access).
+    ```
+
+22. **Admin - Get User by ID (admin access):**
+    ```shell
+    Endpoint: /admin/user/:id
+    Method: GET
+    Description: Retrieves information about a specific user by their ID (admin access).
+    ```
+
+
 ## Getting Started
 To run and test the application, please follow these steps:
 
