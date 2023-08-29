@@ -107,6 +107,21 @@ func main() {
 		SigningKey: []byte(os.Getenv("JWT_SECRET")),
 	}))
 
+	// Modify the middleware to check for JWT validity
+	user.Use(func(c *fiber.Ctx) error {
+		// Check if a JWT token is present in the request
+		token := c.Locals("user").(*jwt.Token)
+		if token == nil || !token.Valid {
+			// Return a "login first" response
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"error": "Login first",
+			})
+		}
+
+		// Token is valid, continue to the next middleware
+		return c.Next()
+	})
+
 	// Define a route for the user section
 	user.Get("/", func(c *fiber.Ctx) error {
 		return c.SendString("Welcome user!")
@@ -239,7 +254,7 @@ func loginHandler(c *fiber.Ctx) error {
 	}
 
 	// Create a JWT token
-	token, err := createToken(user.UserID)
+	token, err := createToken(user.ID)
 	if err != nil {
 		// Handle token creation error
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
