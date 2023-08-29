@@ -49,6 +49,14 @@ type Book struct {
 	Description string  `json:"description"`
 }
 
+// Define a struct to represent a cart item
+type CartItem struct {
+	gorm.Model
+	UserID   uint `json:"user_id"`
+	BookID   uint `json:"book_id"`
+	Quantity uint `json:"quantity"`
+}
+
 var db *gorm.DB
 var validate *validator.Validate
 
@@ -86,6 +94,7 @@ func main() {
 	// Auto-migrate the User and Book model to create the users table
 	db.AutoMigrate(&User{})
 	db.AutoMigrate(&Book{})
+	db.AutoMigrate(&CartItem{})
 
 	// Create a Fiber app
 	app := fiber.New()
@@ -150,6 +159,18 @@ func main() {
 
 	// Get a single book by ID
 	user.Get("/book/:id", getBookByIDHandler)
+
+	// Add a book to the cart
+	user.Post("/cart", addToCartHandler)
+
+	// Get the user's cart
+	user.Get("/cart", getCartHandler)
+
+	// Remove an item from the cart
+	user.Delete("/cart/:book_id", removeFromCartHandler)
+
+	// Update the quantity of a cart item
+	user.Put("/cart/:book_id", updateCartItemQuantityHandler)
 
 	// Define a middleware to protect routes that require a valid JWT
 	admin := app.Group("/admin")
@@ -743,4 +764,157 @@ func createToken(userID uint) (string, error) {
 
 	// Generate the encoded token
 	return token.SignedString([]byte(os.Getenv("JWT_SECRET")))
+}
+
+// Create a new cart item and add it to the user's cart
+func addToCartHandler(c *fiber.Ctx) error {
+	// Parse the user ID from the JWT token
+	token := c.Locals("user").(*jwt.Token)
+	claims := token.Claims.(jwt.MapClaims)
+	userID := uint(claims["user_id"].(float64))
+
+	// Parse the book ID and quantity from the request body
+	var cartItem struct {
+		BookID   uint `json:"book_id" validate:"required"`
+		Quantity uint `json:"quantity" validate:"required"`
+	}
+
+	if err := c.BodyParser(&cartItem); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid input data",
+		})
+	}
+
+	// Validate the input
+	if err := validate.Struct(cartItem); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error":  "Invalid input data",
+			"errors": err.(validator.ValidationErrors),
+		})
+	}
+
+	// Check if the book is already in the user's cart
+	var existingCartItem CartItem
+	if err := db.Where("user_id = ? AND book_id = ?", userID, cartItem.BookID).First(&existingCartItem).Error; err == nil {
+		// Book is already in the cart, update the quantity
+		existingCartItem.Quantity += cartItem.Quantity
+		if err := db.Save(&existingCartItem).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to update cart",
+			})
+		}
+		return c.JSON(existingCartItem)
+	}
+
+	// Book is not in the cart, create a new cart item
+	newCartItem := CartItem{
+		UserID:   userID,
+		BookID:   cartItem.BookID,
+		Quantity: cartItem.Quantity,
+	}
+
+	if err := db.Create(&newCartItem).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to add to cart",
+		})
+	}
+
+	return c.JSON(newCartItem)
+}
+
+// Get the user's cart items
+func getCartHandler(c *fiber.Ctx) error {
+	// Parse the user ID from the JWT token
+	token := c.Locals("user").(*jwt.Token)
+	claims := token.Claims.(jwt.MapClaims)
+	userID := uint(claims["user_id"].(float64))
+
+	// Find all cart items for the user
+	var cartItems []CartItem
+	if err := db.Where("user_id = ?", userID).Find(&cartItems).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to fetch cart items",
+		})
+	}
+
+	return c.JSON(cartItems)
+}
+
+// Remove an item from the user's cart
+func removeFromCartHandler(c *fiber.Ctx) error {
+	// Parse the user ID from the JWT token
+	token := c.Locals("user").(*jwt.Token)
+	claims := token.Claims.(jwt.MapClaims)
+	userID := uint(claims["user_id"].(float64))
+
+	// Parse the book ID from the URL parameter
+	bookID := c.Params("book_id")
+
+	// Find the cart item to remove
+	var cartItem CartItem
+	if err := db.Where("user_id = ? AND book_id = ?", userID, bookID).First(&cartItem).Error; err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "Cart item not found",
+		})
+	}
+
+	// Delete the cart item
+	if err := db.Delete(&cartItem).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to remove item from cart",
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"success": true,
+		"message": "Item removed from cart",
+	})
+}
+
+// Update the quantity of a cart item
+func updateCartItemQuantityHandler(c *fiber.Ctx) error {
+	// Parse the user ID from the JWT token
+	token := c.Locals("user").(*jwt.Token)
+	claims := token.Claims.(jwt.MapClaims)
+	userID := uint(claims["user_id"].(float64))
+
+	// Parse the book ID from the URL parameter
+	bookID := c.Params("book_id")
+
+	// Parse the new quantity from the request body
+	var update struct {
+		Quantity uint `json:"quantity" validate:"required"`
+	}
+
+	if err := c.BodyParser(&update); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid input data",
+		})
+	}
+
+	// Validate the input
+	if err := validate.Struct(update); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error":  "Invalid input data",
+			"errors": err.(validator.ValidationErrors),
+		})
+	}
+
+	// Find the cart item to update
+	var cartItem CartItem
+	if err := db.Where("user_id = ? AND book_id = ?", userID, bookID).First(&cartItem).Error; err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "Cart item not found",
+		})
+	}
+
+	// Update the quantity
+	cartItem.Quantity = update.Quantity
+	if err := db.Save(&cartItem).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to update cart item quantity",
+		})
+	}
+
+	return c.JSON(cartItem)
 }
