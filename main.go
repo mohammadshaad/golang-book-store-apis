@@ -208,6 +208,9 @@ func main() {
 	// Admin - Get a single user by ID
 	admin.Get("/user/:id", getUserByIDHandler)
 
+	// Logout route
+	admin.Post("/logout", logoutHandler)
+
 	// Start the Fiber app
 	port := 8080 // You can change this to your desired port
 	fmt.Printf("Server is listening on port %d...\n", port)
@@ -480,6 +483,8 @@ func logoutHandler(c *fiber.Ctx) error {
 		Expires:  time.Now(),
 		HTTPOnly: true,
 	})
+
+	// Return a success response
 	return c.JSON(fiber.Map{
 		"success": true,
 		"message": "User logged out successfully",
