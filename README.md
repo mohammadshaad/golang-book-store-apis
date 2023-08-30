@@ -5,6 +5,18 @@
 ## Introduction
 Welcome to the documentation for the Bookstore Application, submitted as part of my application for the Balkan ID internship. This document provides a comprehensive overview of the application, its features, and how to set it up and use it.
 
+## Table of Contents
+- [Project Overview](#project-overview)
+- [Best Practices and Recommendations](#best-practices-and-recommendations)
+- [Getting Started](#getting-started)
+- [Application Structure](#application-structure)
+- [Configuration](#configuration)
+- [Features](#features)
+- [Testing](#testing)
+- [Deployment](#deployment)
+- [Troubleshooting](#troubleshooting)
+- [Conclusion](#conclusion)
+
 ### Project Overview
 The Bookstore Application is a web-based platform that allows users to browse, purchase, and manage books. It offers user registration and authentication, book management, and shopping cart functionality.
 
@@ -19,43 +31,43 @@ The Bookstore Application is a web-based platform that allows users to browse, p
 ## Best Practices and Recommendations
 
 ### Environment Variables
-- **Secure Sensitive Information**: We encourage the use of environment variables for sensitive data like database credentials and JWT secrets. However, ensure that your application gracefully handles cases where these variables are missing or have incorrect values. It's advisable to implement error handling for `os.Getenv` calls to enhance robustness.
+- **Securing Sensitive Information**: I highly recommend using environment variables for safeguarding sensitive data like database credentials and JWT secrets. However, it's essential to ensure that my application gracefully handles cases where these variables are missing or contain incorrect values. I've also implemented error handling for `os.Getenv` calls to enhance robustness.
 
 ### Validation
-- **Enhance User Experience**: Utilizing the validator library to validate input data is a commendable practice for maintaining data integrity. To improve user experience, consider providing more specific error messages to clients that pinpoint which field failed validation, helping users correct their inputs more easily.
+- **Enhancing User Experience**: I've adopted the validator library to validate input data, which is a commendable practice for maintaining data integrity. To enhance the user experience, I'm considering providing more specific error messages to clients, pinpointing which field failed validation. This will assist users in correcting their inputs more easily.
 
 ### Password Hashing
-- **Prioritize Security**: Protecting user passwords is crucial for security. You are correctly hashing passwords using bcrypt before storing them in the database, which is a strong security measure. 
+- **Prioritizing Security**: The security of user passwords is of paramount importance. I've implemented the correct practice of hashing passwords using bcrypt before storing them in the database, which is a robust security measure.
 
 ### JWT (JSON Web Tokens)
-- **Secure Authentication**: JWT-based user authentication is a widely accepted and secure approach. Ensure that your JWT secret remains confidential and consider token refresh mechanisms for longer user sessions.
+- **Ensuring Secure Authentication**: I've employed JWT-based user authentication, a widely accepted and secure approach. I take measures to keep my JWT secret confidential and consider token refresh mechanisms for longer user sessions.
 
 ### Database Operations
-- **Well-implemented Database Operations**: Your database operations, such as creating, updating, and deleting records, appear to be well-implemented and robust.
+- **Well-implemented Database Operations**: My database operations, such as creating, updating, and deleting records, are well-implemented and robust.
 
 ### Error Handling
-- **Client-Friendly Errors**: It's excellent that you handle errors in your application's handlers, returning appropriate HTTP status codes and meaningful error messages to clients. This improves user experience and helps developers debug issues efficiently.
+- **User-Friendly Errors**: I take pride in my error-handling approach within my application's handlers. I ensure that appropriate HTTP status codes and meaningful error messages are returned to clients. This practice significantly enhances the user experience and aids developers in efficiently debugging issues.
 
 ### Middleware
-- **Enhance Security**: The use of middleware for checking JWT validity and user roles adds an additional layer of security and authorization to your application.
+- **Enhancing Security**: I use middleware to check JWT validity and user roles, adding an extra layer of security and authorization to my application.
 
 ### User ID Generation
-- **Consider Alternatives**: While random user ID generation can be functional, it's worth considering more reliable methods such as auto-incremented database IDs or UUIDs to ensure uniqueness and scalability.
+- **Considering Alternatives**: While I currently generate random user IDs, I'm open to exploring more reliable methods such as auto-incremented database IDs or UUIDs to ensure uniqueness and scalability.
 
 ### Logging
-- **Improve Debugging and Monitoring**: Consider implementing structured logging in your application. Structured logs greatly assist in debugging and monitoring, making it easier to trace and diagnose issues.
+- **Improving Debugging and Monitoring**: I'm considering implementing structured logging within my application. Structured logs are invaluable for debugging and monitoring, as they make it easier to trace and diagnose issues.
 
 ### Testing
-- **Comprehensive Testing**: Ensure thorough testing of your application, covering not only normal use cases but also error scenarios, edge cases, and security aspects. Automated testing can be highly beneficial in achieving this.
+- **Comprehensive Testing**: I'm committed to thorough testing of my application, covering not only standard use cases but also error scenarios, edge cases, and security aspects. Automated testing plays a pivotal role in achieving this.
 
 ### Comments and Documentation
-- **Enhance Code Clarity**: While your code structure appears sound, consider adding comments or documentation to explain the purpose of each function and route. This practice is especially valuable if other developers will work on the code in the future.
+- **Enhancing Code Clarity**: While my code structure is sound, I acknowledge the value of adding comments or documentation to clarify the purpose of each function and route. This practice is especially valuable for the benefit of future developers who may work on my code.
 
 ### JWT Expiration
-- **Customize to Your Needs**: The JWT expiration is currently set to 24 hours. Depending on your specific use case, you may want to adjust this value to match your application's requirements.
+- **Customization to Your Needs**: My JWT expiration is currently set to 24 hours. Depending on your specific use case, you may want to adjust this value to align with your application's requirements.
 
 ### File Uploads
-- **Handle Securely**: If fields like "Image" and "Path" in the Book struct represent uploaded files, you'll need to implement secure file upload handling in your application. This includes managing file storage and serving, ensuring the security of user-uploaded content.
+- **Secure Handling**: If fields like "Image" and "Path" in the Book struct represent uploaded files, I understand the importance of implementing secure file upload handling in my application. This encompasses secure management of file storage and serving, ensuring the safety of user-uploaded content.
 
 ### APIs Used
 
