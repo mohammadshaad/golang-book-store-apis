@@ -47,6 +47,8 @@ type Book struct {
 	Price       float64 `json:"price"`
 	Quantity    int     `json:"quantity"`
 	Description string  `json:"description"`
+	Image       string  `json:"image"`
+	Path        string  `json:"path"`
 }
 
 // Define a struct to represent a cart item
@@ -55,6 +57,14 @@ type CartItem struct {
 	UserID   uint `json:"user_id"`
 	BookID   uint `json:"book_id"`
 	Quantity uint `json:"quantity"`
+}
+
+type Review struct {
+	gorm.Model
+	BookID  uint   `json:"book_id"`
+	UserID  uint   `json:"user_id"`
+	Rating  int    `json:"rating"`
+	Comment string `json:"comment"`
 }
 
 var db *gorm.DB
@@ -91,10 +101,11 @@ func main() {
 		panic("failed to connect to the database")
 	}
 
-	// Auto-migrate the User and Book model to create the users table
+	// Auto-migrate the User, Book, Cart Items & Review model to create the users table
 	db.AutoMigrate(&User{})
 	db.AutoMigrate(&Book{})
 	db.AutoMigrate(&CartItem{})
+	db.AutoMigrate(&Review{})
 
 	// Create a Fiber app
 	app := fiber.New()
@@ -141,6 +152,9 @@ func setupRoutes(app *fiber.App) {
 	user.Get("/cart", getCartHandler)
 	user.Delete("/cart/:book_id", removeFromCartHandler)
 	user.Put("/cart/:book_id", updateCartItemQuantityHandler)
+	user.Post("/book/:book_id/reviews", addReviewHandler)
+	user.Get("/book/:book_id/reviews", getBookReviewsHandler)
+	user.Get("/book/:id/download", downloadBookHandler)
 
 	// Admin routes (protected by JWT and requires admin role)
 	admin := app.Group("/admin")
@@ -160,6 +174,11 @@ func setupRoutes(app *fiber.App) {
 	admin.Delete("/book/:id", deleteBookHandler)
 	admin.Get("/users", getAllUsersHandler)
 	admin.Get("/user/:id", getUserByIDHandler)
+	admin.Get("/book/:id/download", downloadBookHandler)
+	admin.Get("/book/:id/reviews", getBookReviewsHandler)
+	admin.Get("/cart", getAllCartItemsHandler)
+	admin.Get("/cart/:user_id", getUserCartHandler)
+	admin.Delete("/cart/:user_id/:book_id", deleteCartItemHandler)
 	admin.Post("/logout", logoutHandler)
 }
 
@@ -654,6 +673,8 @@ func updateBookHandler(c *fiber.Ctx) error {
 	book.Price = updatedBook.Price
 	book.Quantity = updatedBook.Quantity
 	book.Description = updatedBook.Description
+	book.Image = updatedBook.Image
+	book.Path = updatedBook.Path
 
 	// Save the updated book to the database
 	if err := db.Save(&book).Error; err != nil {
@@ -885,4 +906,184 @@ func updateCartItemQuantityHandler(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(cartItem)
+}
+
+// Add a review for a book
+func addReviewHandler(c *fiber.Ctx) error {
+	// Parse the book ID from the URL parameter
+	bookIDStr := c.Params("book_id")
+
+	// Convert the book ID to a uint
+	bookID, err := strconv.ParseUint(bookIDStr, 10, 32)
+	if err != nil {
+		// Handle invalid ID format
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid ID format",
+		})
+	}
+
+	// Convert the book ID to a uint
+	bookIDUint := uint(bookID)
+
+	// Parse the user ID from the JWT token
+	token := c.Locals("user").(*jwt.Token)
+	claims := token.Claims.(jwt.MapClaims)
+	userID := uint(claims["user_id"].(float64))
+
+	// Check if the user has already reviewed the book
+	var existingReview Review
+	if err := db.Where("user_id = ? AND book_id = ?", userID, bookIDUint).First(&existingReview).Error; err == nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "You have already reviewed this book",
+		})
+	}
+
+	// Check if the book exists
+	var book Book
+	if err := db.First(&book, bookIDUint).Error; err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "Book not found",
+		})
+	}
+
+	// Check if the user exists
+	var user User
+	if err := db.First(&user, userID).Error; err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "User not found",
+		})
+	}
+
+	// Parse the review data from the request body
+	var review Review
+	if err := c.BodyParser(&review); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid input data",
+		})
+	}
+
+	// Set the book ID and user ID
+	review.BookID = bookIDUint
+	review.UserID = userID
+
+	// Save the review to the database
+	if err := db.Create(&review).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to add review",
+		})
+	}
+
+	return c.JSON(review)
+}
+
+// Get reviews for a book
+func getBookReviewsHandler(c *fiber.Ctx) error {
+	// Parse the book ID from the URL parameter
+	bookID := c.Params("book_id")
+
+	// Find all reviews for the book
+	var reviews []Review
+	if err := db.Where("book_id = ?", bookID).Find(&reviews).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to fetch reviews",
+		})
+	}
+
+	if len(reviews) == 0 {
+		return c.JSON(fiber.Map{
+			"message": "No reviews for this book",
+		})
+	}
+
+	// Return the reviews
+	return c.JSON(reviews)
+}
+
+func downloadBookHandler(c *fiber.Ctx) error {
+	// Parse the book ID from the URL parameter
+	bookID := c.Params("id")
+
+	// Find the book in the database by ID
+	var book Book
+	if err := db.First(&book, bookID).Error; err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "Book not found",
+		})
+	}
+
+	// Get the file path
+	filePath := book.Path
+
+	return c.SendFile(filePath)
+}
+
+// Cart section for admin to see all the users cart items
+func getAllCartItemsHandler(c *fiber.Ctx) error {
+	var cartItems []CartItem
+	if err := db.Find(&cartItems).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to fetch cart items",
+		})
+	}
+
+	if len(cartItems) == 0 {
+		return c.JSON(fiber.Map{
+			"message": "Cart is empty",
+		})
+	}
+
+	// Return the cart items
+	return c.JSON(cartItems)
+}
+
+// Get a user's cart items
+func getUserCartHandler(c *fiber.Ctx) error {
+	// Parse the user ID from the URL parameter
+	userID := c.Params("user_id")
+
+	// Find all cart items for the user
+	var cartItems []CartItem
+	if err := db.Where("user_id = ?", userID).Find(&cartItems).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to fetch cart items",
+		})
+	}
+
+	if len(cartItems) == 0 {
+		return c.JSON(fiber.Map{
+			"message": "Cart is empty",
+		})
+	}
+
+	// Return the cart items
+	return c.JSON(cartItems)
+}
+
+// Remove an item from the user's cart
+func deleteCartItemHandler(c *fiber.Ctx) error {
+	// Parse the user ID from the URL parameter
+	userID := c.Params("user_id")
+
+	// Parse the book ID from the URL parameter
+	bookID := c.Params("book_id")
+
+	// Find the cart item to remove
+	var cartItem CartItem
+	if err := db.Where("user_id = ? AND book_id = ?", userID, bookID).First(&cartItem).Error; err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "Cart item not found",
+		})
+	}
+
+	// Delete the cart item
+	if err := db.Delete(&cartItem).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to remove item from cart",
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"success": true,
+		"message": "Item removed from cart",
+	})
 }
