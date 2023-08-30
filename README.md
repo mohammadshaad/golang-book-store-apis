@@ -8,6 +8,7 @@ Welcome to the documentation for the Bookstore Application, submitted as part of
 ## Table of Contents
 - [Project Overview](#project-overview)
 - [Security Considerations](#security-considerations)
+- [APIs Used](#apis-used)
 - [Getting Started](#getting-started)
 - [Application Structure](#application-structure)
 - [Configuration](#configuration)
@@ -69,7 +70,7 @@ The Bookstore Application is a web-based platform that allows users to browse, p
 ### File Uploads
 - **Secure Handling**: If fields like "Image" and "Path" in the Book struct represent uploaded files, I understand the importance of implementing secure file upload handling in my application. This encompasses secure management of file storage and serving, ensuring the safety of user-uploaded content.
 
-### APIs Used
+## APIs Used
 
 1. **User Registration:**
    ```shell
