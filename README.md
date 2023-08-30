@@ -7,7 +7,7 @@ Welcome to the documentation for the Bookstore Application, submitted as part of
 
 ## Table of Contents
 - [Project Overview](#project-overview)
-- [Best Practices and Recommendations](#best-practices-and-recommendations)
+- [Security Considerations](#security-considerations)
 - [Getting Started](#getting-started)
 - [Application Structure](#application-structure)
 - [Configuration](#configuration)
@@ -28,7 +28,7 @@ The Bookstore Application is a web-based platform that allows users to browse, p
 - JSON Web Tokens (JWT) for authentication
 - React.js (Frontend)
 
-## Best Practices and Recommendations
+## Security Considerations
 
 ### Environment Variables
 - **Securing Sensitive Information**: I highly recommend using environment variables for safeguarding sensitive data like database credentials and JWT secrets. However, it's essential to ensure that my application gracefully handles cases where these variables are missing or contain incorrect values. I've also implemented error handling for `os.Getenv` calls to enhance robustness.
