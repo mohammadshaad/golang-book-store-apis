@@ -104,139 +104,100 @@ func main() {
 		return c.SendString("Welcome to the book store!")
 	})
 
-	// Define a route for user registration
-	app.Post("/register", registerHandler)
-
-	// Define a route for user login
-	app.Post("/login", loginHandler)
-
-	// Define a middleware to protect routes that require a valid JWT
-	user := app.Group("/user")
-	user.Use(jwtware.New(jwtware.Config{
-		SigningKey: []byte(os.Getenv("JWT_SECRET")),
-	}))
-
-	// Modify the middleware to check for JWT validity
-	user.Use(func(c *fiber.Ctx) error {
-		// Check if a JWT token is present in the request
-		token := c.Locals("user").(*jwt.Token)
-		if token == nil || !token.Valid {
-			// Return a "login first" response
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"error": "Login first",
-			})
-		}
-
-		// Token is valid, continue to the next middleware
-		return c.Next()
-	})
-
-	// Define a route for the user section
-	user.Get("/", func(c *fiber.Ctx) error {
-		return c.SendString("Welcome user!")
-	})
-
-	// Define a route for getting a user's profile
-	user.Get("/profile/:id", profile)
-
-	// Define a route for updating a user's profile
-	user.Put("/profile/:id", updateProfile)
-
-	// Define a route for deactivating an account
-	user.Put("/deactivate/:id", deactivateAccountHandler)
-
-	// Define a route for activating an account
-	user.Put("/activate/:id", activateAccountHandler)
-
-	// Define a route for deleting an account
-	user.Delete("/delete/:id", deleteAccountHandler)
-
-	// Logout route
-	user.Post("/logout", logoutHandler)
-
-	// Get a list of all books
-	user.Get("/books", getAllBooksHandler)
-
-	// Get a single book by ID
-	user.Get("/book/:id", getBookByIDHandler)
-
-	// Add a book to the cart
-	user.Post("/cart", addToCartHandler)
-
-	// Get the user's cart
-	user.Get("/cart", getCartHandler)
-
-	// Remove an item from the cart
-	user.Delete("/cart/:book_id", removeFromCartHandler)
-
-	// Update the quantity of a cart item
-	user.Put("/cart/:book_id", updateCartItemQuantityHandler)
-
-	// Define a middleware to protect routes that require a valid JWT
-	admin := app.Group("/admin")
-	admin.Use(jwtware.New(jwtware.Config{
-		SigningKey: []byte(os.Getenv("JWT_SECRET")),
-	}))
-
-	// Add a custom middleware to check for the "admin" role
-	admin.Use(func(c *fiber.Ctx) error {
-		// Get the user ID from the JWT payload
-		userID := c.Locals("user").(*jwt.Token).Claims.(jwt.MapClaims)["user_id"].(float64)
-
-		// Find the user in the database
-		var user User
-		if err := db.First(&user, uint(userID)).Error; err != nil {
-			// Handle database errors (e.g., no user with the given ID)
-			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-				"error": "User not found",
-			})
-		}
-
-		// Check if the user is an admin
-		if user.Role != UserRoleAdmin {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"error": "Unauthorized",
-			})
-		}
-
-		// Continue to the next middleware
-		return c.Next()
-	})
-
-	// Define a route for the admin section
-	admin.Get("/", func(c *fiber.Ctx) error {
-		return c.SendString("Welcome admin!")
-	})
-
-	// Admin - Get a list of all books
-	admin.Get("/books", getAllBooksHandler)
-
-	// Admin - Get a single book by ID
-	admin.Get("/book/:id", getBookByIDHandler)
-
-	// Admin - Create a new book
-	admin.Post("/book", createBookHandler)
-
-	// Admin - Update a book by ID
-	admin.Put("/book/:id", updateBookHandler)
-
-	// Admin - Delete a book by ID
-	admin.Delete("/book/:id", deleteBookHandler)
-
-	// Admin - Get all users
-	admin.Get("/users", getAllUsersHandler)
-
-	// Admin - Get a single user by ID
-	admin.Get("/user/:id", getUserByIDHandler)
-
-	// Logout route
-	admin.Post("/logout", logoutHandler)
+	// Define routes
+	setupRoutes(app)
 
 	// Start the Fiber app
 	port := 8080 // You can change this to your desired port
 	fmt.Printf("Server is listening on port %d...\n", port)
 	app.Listen(fmt.Sprintf(":%d", port))
 }
+
+// setupRoutes defines all the routes and their handlers
+func setupRoutes(app *fiber.App) {
+	// Public routes
+	app.Post("/register", registerHandler)
+	app.Post("/login", loginHandler)
+
+	// User routes (protected by JWT)
+	user := app.Group("/user")
+	user.Use(jwtware.New(jwtware.Config{
+		SigningKey: []byte(os.Getenv("JWT_SECRET")),
+	}))
+	user.Use(checkJWTValidity)
+
+	user.Get("/", func(c *fiber.Ctx) error {
+		return c.SendString("Welcome user!")
+	})
+	user.Get("/profile/:id", profile)
+	user.Put("/profile/:id", updateProfile)
+	user.Put("/deactivate/:id", deactivateAccountHandler)
+	user.Put("/activate/:id", activateAccountHandler)
+	user.Delete("/delete/:id", deleteAccountHandler)
+	user.Post("/logout", logoutHandler)
+	user.Get("/books", getAllBooksHandler)
+	user.Get("/book/:id", getBookByIDHandler)
+	user.Post("/cart", addToCartHandler)
+	user.Get("/cart", getCartHandler)
+	user.Delete("/cart/:book_id", removeFromCartHandler)
+	user.Put("/cart/:book_id", updateCartItemQuantityHandler)
+
+	// Admin routes (protected by JWT and requires admin role)
+	admin := app.Group("/admin")
+	admin.Use(jwtware.New(jwtware.Config{
+		SigningKey: []byte(os.Getenv("JWT_SECRET")),
+	}))
+	admin.Use(checkJWTValidity)
+	admin.Use(checkAdminRole)
+
+	admin.Get("/", func(c *fiber.Ctx) error {
+		return c.SendString("Welcome admin!")
+	})
+	admin.Get("/books", getAllBooksHandler)
+	admin.Get("/book/:id", getBookByIDHandler)
+	admin.Post("/book", createBookHandler)
+	admin.Put("/book/:id", updateBookHandler)
+	admin.Delete("/book/:id", deleteBookHandler)
+	admin.Get("/users", getAllUsersHandler)
+	admin.Get("/user/:id", getUserByIDHandler)
+	admin.Post("/logout", logoutHandler)
+}
+
+// checkJWTValidity middleware checks if the JWT is valid
+func checkJWTValidity(c *fiber.Ctx) error {
+	token := c.Locals("user").(*jwt.Token)
+	if token == nil || !token.Valid {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Login first",
+		})
+	}
+	return c.Next()
+}
+
+// checkAdminRole middleware checks if the user has the "admin" role
+func checkAdminRole(c *fiber.Ctx) error {
+	// Get the user ID from the JWT payload
+	userID := c.Locals("user").(*jwt.Token).Claims.(jwt.MapClaims)["user_id"].(float64)
+
+	// Find the user in the database
+	var user User
+	if err := db.First(&user, uint(userID)).Error; err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "User not found",
+		})
+	}
+
+	// Check if the user is an admin
+	if user.Role != UserRoleAdmin {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Unauthorized",
+		})
+	}
+
+	return c.Next()
+}
+
+// Handlers for the routes
 
 func loginHandler(c *fiber.Ctx) error {
 	var userData struct {
@@ -837,6 +798,13 @@ func getCartHandler(c *fiber.Ctx) error {
 		})
 	}
 
+	if len(cartItems) == 0 {
+		return c.JSON(fiber.Map{
+			"message": "Cart is empty",
+		})
+	}
+
+	// Return the cart items
 	return c.JSON(cartItems)
 }
 
