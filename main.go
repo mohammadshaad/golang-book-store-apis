@@ -129,7 +129,7 @@ func main() {
 	// Start the Fiber app
 	port := 8080 // You can change this to your desired port
 	fmt.Printf("Server is listening on port %d...\n", port)
-	app.Listen(fmt.Sprintf(":%d", port))
+	app.Listen("0.0.0.0:"  + strconv.Itoa(port))
 }
 
 // setupRoutes defines all the routes and their handlers
