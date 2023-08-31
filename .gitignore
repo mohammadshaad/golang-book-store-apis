@@ -47,8 +47,5 @@ _test/
 # .DS_Store files (macOS specific)
 .DS_Store
 
-# Environment variables file
-.env
-
 # Build files
 golang-book-store-backend
