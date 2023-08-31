@@ -6,28 +6,46 @@
 # Folders
 _obj/
 _test/
-vendor/
-.idea/
-.vscode/
 
 # Output files
 *.exe
 *.test
 *.prof
 *.out
+*.cprof
+*.trace
 
-# Dependency directories (remove the ones you need)
+# Log files
+*.log
+
+# Binary files
+*.bin
+
+# Go binaries
 /bin/
 /pkg/
-/github.com/
-/golang.org/
-/gopkg.in/
+/bin-*
 
-# Compiled Go binary
-main
+# IDE specific files (e.g. Visual Studio Code)
+.vscode/
+
+# Dependency directories (e.g. Golang modules)
+/vendor/
+
+# Compiled output
+*.test
+
+# Coverage directory
+/coverage/
+
+# Built application files
+/app
+
+# End of line character
+.idea/
+
+# .DS_Store files (macOS specific)
+.DS_Store
 
 # Environment variables file
 .env
-
-# macOS
-.DS_Store
