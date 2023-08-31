@@ -247,8 +247,27 @@ Before you begin, ensure you have the following installed:
 ## Application Structure
 The project is organized as follows:
 
-- `main.go`: Entry point of the application.
-- `tests/`: Unit and integration tests.
+```bash
+my-golang-book-store/
+│
+├── database/
+│   ├── database.go
+│   └── models.go
+│
+├── middleware/
+│   ├── middleware.go
+│
+├── routes/
+│   ├── routes.go
+│   └── handlers.go
+│
+├── main.go
+├── go.mod
+├── go.sum
+├── README.md
+├── .env.example
+└── main_test.go
+```
 
 ## Configuration
 The application reads configuration settings from environment variables. Here are the key variables to configure:
