@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/mohammadshaad/golang-book-store-backend/routes"
 )
 
 func TestLoginHandler(t *testing.T) {
@@ -50,7 +51,7 @@ func setupTestApp() *fiber.App {
 	app := fiber.New()
 
 	// Set up your routes here, similar to your main function
-	app.Post("/login", loginHandler)
+	app.Post("/login", routes.LoginHandler)
 
 	return app
 }
