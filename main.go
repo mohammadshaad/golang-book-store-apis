@@ -88,11 +88,13 @@ func main() {
 	dbPassword := os.Getenv("DB_PASSWORD")
 	dbName := os.Getenv("DB_NAME")
 
-	// Define the database connection string
-	connStr := fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable TimeZone=Asia/Shanghai",
-		dbHost, dbPort, dbUser, dbPassword, dbName,
-	)
+	// // Define the database connection string
+	// connStr := fmt.Sprintf(
+	// 	"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable TimeZone=Asia/Shanghai",
+	// 	dbHost, dbPort, dbUser, dbPassword, dbName,
+	// )
+
+	connStr := "postgresql://postgres:Z6mMaUDtLKJyaoE1f3kg@containers-us-west-191.railway.app:7080/railway"
 
 	// Open the database connection
 	var err error
