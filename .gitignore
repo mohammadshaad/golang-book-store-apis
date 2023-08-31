@@ -47,5 +47,14 @@ _test/
 # .DS_Store files (macOS specific)
 .DS_Store
 
+# Environment file
+.env
+
 # Build files
 golang-book-store-backend
+
+# Local configuration file (e.g. Visual Studio Code)
+/.vscode/settings.json
+
+# Environment file
+.env
