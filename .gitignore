@@ -49,3 +49,6 @@ _test/
 
 # Environment variables file
 .env
+
+# Build files
+golang-book-store-backend
