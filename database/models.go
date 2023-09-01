@@ -23,16 +23,17 @@ type User struct {
 }
 
 type Book struct {
-	ID          uint    `json:"id"`
-	Title       string  `json:"title"`
-	Author      string  `json:"author"`
-	ISBN        string  `json:"isbn"`
-	Genre       string  `json:"genre"`
-	Price       float64 `json:"price"`
-	Quantity    int     `json:"quantity"`
-	Description string  `json:"description"`
-	Image       string  `json:"image"`
-	Path        string  `json:"path"`
+	ID            uint    `json:"id"`
+	Title         string  `json:"title"`
+	Author        string  `json:"author"`
+	ISBN          string  `json:"isbn"`
+	Genre         string  `json:"genre"`
+	Price         float64 `json:"price"`
+	Quantity      int     `json:"quantity"`
+	Description   string  `json:"description"`
+	Image         string  `json:"image"`
+	Path          string  `json:"path"`
+	AverageRating float64 `json:"average_rating"`
 }
 
 // Define a struct to represent a cart item
@@ -45,8 +46,8 @@ type CartItem struct {
 
 type Review struct {
 	gorm.Model
-	BookID  uint   `json:"book_id"`
-	UserID  uint   `json:"user_id"`
-	Rating  int    `json:"rating"`
-	Comment string `json:"comment"`
+	BookID    uint   `json:"book_id"`
+	UserID    uint   `json:"user_id"`
+	Rating    int    `json:"rating"`
+	Comment   string `json:"comment"`
 }

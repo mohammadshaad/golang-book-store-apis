@@ -824,17 +824,32 @@ func AddReviewHandler(c *fiber.Ctx) error {
 		})
 	}
 
+	// Fetch the review again from the database to get the created_at value
+	if err := database.GetDB().Where("id = ?", review.ID).First(&review).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to fetch review",
+		})
+	}
+
 	return c.JSON(review)
 }
 
-// Get reviews for a book
+// Get reviews for a book with user names
 func GetBookReviewsHandler(c *fiber.Ctx) error {
 	// Parse the book ID from the URL parameter
 	bookID := c.Params("book_id")
 
-	// Find all reviews for the book
-	var reviews []database.Review
-	if err := database.GetDB().Where("book_id = ?", bookID).Find(&reviews).Error; err != nil {
+	// Find all reviews for the book and include user information
+	var reviews []struct {
+		database.Review
+		FirstName string `json:"first_name"`
+		CreatedAt string `json:"created_at"`
+	}
+	if err := database.GetDB().Table("reviews").
+		Select("reviews.*, users.first_name, reviews.created_at").
+		Joins("LEFT JOIN users ON users.id = reviews.user_id").
+		Where("reviews.book_id = ?", bookID).
+		Scan(&reviews).Error; err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to fetch reviews",
 		})
@@ -846,7 +861,7 @@ func GetBookReviewsHandler(c *fiber.Ctx) error {
 		})
 	}
 
-	// Return the reviews
+	// Return the reviews with user first names and CreatedAt
 	return c.JSON(reviews)
 }
 
