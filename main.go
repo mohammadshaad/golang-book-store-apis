@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/joho/godotenv"
 
 	"github.com/mohammadshaad/golang-book-store-backend/database"
@@ -30,6 +31,13 @@ func main() {
 
 	// Create a Fiber app
 	app := fiber.New()
+
+	// Enable CORS
+    // Configure CORS
+    app.Use(cors.New(cors.Config{
+        AllowOrigins: "http://localhost:5173", // Update with the actual URL of your React app
+        AllowHeaders: "Origin, Content-Type, Accept",
+    }))
 
 	// Define routes
 	routes.DefineRoutes(app)
