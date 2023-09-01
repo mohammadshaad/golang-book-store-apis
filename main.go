@@ -33,11 +33,10 @@ func main() {
 	app := fiber.New()
 
 	// Enable CORS
-    // Configure CORS
-    app.Use(cors.New(cors.Config{
-        AllowOrigins: "http://localhost:5173", // Update with the actual URL of your React app
-        AllowHeaders: "Origin, Content-Type, Accept",
-    }))
+	app.Use(cors.New(cors.Config{
+		AllowOrigins: "http://localhost:5173",                       // Update with the actual URL of your React app
+		AllowHeaders: "Origin, Content-Type, Accept, Authorization", // Include "Authorization" here
+	}))
 
 	// Define routes
 	routes.DefineRoutes(app)

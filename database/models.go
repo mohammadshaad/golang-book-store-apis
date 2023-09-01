@@ -9,7 +9,7 @@ type UserRole string
 
 const (
 	UserRoleAdmin    UserRole = "admin"
-	UserRoleStandard UserRole = "standard"
+	UserRoleStandard UserRole = "user"
 )
 
 type User struct {

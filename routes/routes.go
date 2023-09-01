@@ -45,12 +45,9 @@ func defineUserRoutes(app *fiber.App) {
 	// Modify the middleware to check for JWT validity
 	user.Use(middleware.CheckJWTValidity)
 
-	// Define a route for the user section
-	user.Get("/", func(c *fiber.Ctx) error {
-		return c.SendString("Welcome user!")
-	})
-
+	user.Get("/", UserHomePageHandler)
 	user.Get("/profile/:id", Profile)
+	user.Get("/name/:id", GetUserNameHandler)
 	user.Put("/profile/:id", UpdateProfile)
 	user.Put("/deactivate/:id", DeactivateAccountHandler)
 	user.Put("/activate/:id", ActivateAccountHandler)

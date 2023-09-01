@@ -280,6 +280,50 @@ func DeleteAccountHandler(c *fiber.Ctx) error {
 	})
 }
 
+// Get users name
+func GetUserNameHandler(c *fiber.Ctx) error {
+	// Parse the user ID from the JWT token
+	token := c.Locals("user").(*jwt.Token)
+	claims := token.Claims.(jwt.MapClaims)
+	userID := uint(claims["user_id"].(float64))
+
+	// Find the user in the database
+	var user database.User
+	if err := database.GetDB().First(&user, userID).Error; err != nil {
+		// Handle database errors (e.g., no user with the given ID)
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "User not found",
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"success": true,
+		"name":    user.FirstName,
+	})
+}
+
+// User Home Page - Send the name of the logged in user in the response body
+func UserHomePageHandler(c *fiber.Ctx) error {
+	// Parse the user ID from the JWT token
+	token := c.Locals("user").(*jwt.Token)
+	claims := token.Claims.(jwt.MapClaims)
+	userID := uint(claims["user_id"].(float64))
+
+	// Find the user in the database
+	var user database.User
+	if err := database.GetDB().First(&user, userID).Error; err != nil {
+		// Handle database errors (e.g., no user with the given ID)
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "User not found",
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"success": true,
+		"name":    user.FirstName,
+	})
+}
+
 func LogoutHandler(c *fiber.Ctx) error {
 	// Set the token's expiration time to now thereby invalidating it
 	c.Cookie(&fiber.Cookie{
@@ -426,7 +470,10 @@ func GetAllBooksHandler(c *fiber.Ctx) error {
 				"error": "Failed to fetch books",
 			})
 		}
-		return c.JSON(books)
+		// Return books as a JSON object with a 'books' property
+		return c.JSON(fiber.Map{
+			"books": books,
+		})
 	}
 
 	// ID parameter is present, fetch a single book by ID
