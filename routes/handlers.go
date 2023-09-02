@@ -979,3 +979,22 @@ func DeleteCartItemHandler(c *fiber.Ctx) error {
 		"message": "Item removed from cart",
 	})
 }
+
+
+// Get the role of the user from the database
+func GetUserRoleHandler (c *fiber.Ctx) error {
+	// Parse the user ID from the URL parameter
+	userID := c.Params("id")
+
+	// Find the user in the database
+	var user database.User
+	if err := database.GetDB().First(&user, userID).Error; err != nil {
+		// Handle database errors (e.g., no user with the given ID)
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "User not found",
+		})
+	}
+    return c.JSON(fiber.Map{
+        "role": user.Role,
+    })
+}

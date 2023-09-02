@@ -63,6 +63,8 @@ func defineUserRoutes(app *fiber.App) {
 	user.Post("/book/:book_id/reviews", AddReviewHandler)
 	user.Get("/book/:book_id/reviews", GetBookReviewsHandler)
 	user.Get("/book/:id/download", DownloadBookHandler)
+	// getting the role of the user
+	user.Get("/role/:id", GetUserRoleHandler)
 
 }
 
@@ -94,4 +96,5 @@ func defineAdminRoutes(app *fiber.App) {
 	admin.Get("/cart/:user_id", GetUserCartHandler)
 	admin.Delete("/cart/:user_id/:book_id", DeleteCartItemHandler)
 	admin.Post("/logout", LogoutHandler)
+	admin.Get("/role/:id", GetUserRoleHandler)
 }
