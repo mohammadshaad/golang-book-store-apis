@@ -38,10 +38,11 @@ type Book struct {
 
 // Define a struct to represent a cart item
 type CartItem struct {
-	gorm.Model
-	UserID   uint `json:"user_id"`
-	BookID   uint `json:"book_id"`
-	Quantity uint `json:"quantity"`
+    gorm.Model
+    UserID   uint    `json:"user_id"`
+    BookID   uint    `json:"book_id"`
+    Subtotal float64 `json:"subtotal"` // Change the data type to float64
+    Quantity uint    `json:"quantity"`
 }
 
 type Review struct {

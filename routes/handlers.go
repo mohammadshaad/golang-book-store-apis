@@ -631,6 +631,18 @@ func AddToCartHandler(c *fiber.Ctx) error {
 	if err := database.GetDB().Where("user_id = ? AND book_id = ?", userID, cartItem.BookID).First(&existingCartItem).Error; err == nil {
 		// Book is already in the cart, update the quantity
 		existingCartItem.Quantity += cartItem.Quantity
+
+		// Retrieve the book price
+		var book database.Book
+		if err := database.GetDB().First(&book, cartItem.BookID).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to fetch book details",
+			})
+		}
+
+		// Calculate the subtotal and assign it to the existing cart item
+		existingCartItem.Subtotal = float64(existingCartItem.Quantity) * book.Price
+
 		if err := database.GetDB().Save(&existingCartItem).Error; err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 				"error": "Failed to update cart",
@@ -645,6 +657,17 @@ func AddToCartHandler(c *fiber.Ctx) error {
 		BookID:   cartItem.BookID,
 		Quantity: cartItem.Quantity,
 	}
+
+	// Retrieve the book price
+	var book database.Book
+	if err := database.GetDB().First(&book, cartItem.BookID).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to fetch book details",
+		})
+	}
+
+	// Calculate the subtotal and assign it to the new cart item
+	newCartItem.Subtotal = float64(newCartItem.Quantity) * book.Price
 
 	if err := database.GetDB().Create(&newCartItem).Error; err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -880,7 +903,10 @@ func DownloadBookHandler(c *fiber.Ctx) error {
 	// Get the file path
 	filePath := book.Path
 
-	return c.SendFile(filePath)
+	// send the file path as a response
+	return c.JSON(fiber.Map{
+		"file_path": filePath,
+	})
 }
 
 // Cart section for admin to see all the users cart items
